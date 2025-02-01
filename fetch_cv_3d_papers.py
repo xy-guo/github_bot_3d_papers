@@ -35,7 +35,7 @@ from pydantic import BaseModel
 # ========== Step 1: Configuration ==========
 
 # Config
-RESEARCH_AREAS = ['3D reconstruction', '3D generation']
+RESEARCH_AREAS = ['3D reconstruction', 'Mesh Reconstruction', '3D generation', "Multi-view Stereo", "Autonomous Driving", "Video Generation"]  # Your research areas
 
 # OpenAI API key
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]  # Replace with your actual OpenAI API Key
@@ -53,7 +53,7 @@ if not all([OPENAI_API_KEY, SENDER_EMAIL, SENDER_PASSWORD, RECEIVER_EMAIL]):
 
 # ========== Step 2: Helper Functions ==========
 
-def fetch_arxiv_papers(search_query="cat:cs.CV", max_results=50):
+def fetch_arxiv_papers(search_query="cat:cs.CV", max_results=100):
     """
     Fetch a list of papers from arXiv that match the search conditions.
     Default search category: Computer Vision (cs.CV).
@@ -84,6 +84,7 @@ class PaperSummary(BaseModel):
     keywords: List[str]
     contributions: List[str]
     approach: List[str]
+    relate_score: float
 
 
 def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
@@ -107,10 +108,11 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
         "Please answer in json format:"
         """dict(
             is_related: bool,  # is related to your research topic
-            research_topic: str,  # main research topic & task
-            keywords: List[str],  # paper keywords
-            contributions: List[str],  # main contributions, listed in items
-            approach: List[str],  # input --> step1 --> step2 --> step3 --> solution
+            research_topic: str,  # main research topic with chinese translation (e.g., 3D reconstruction 三维重建)
+            keywords: List[str],  # paper keywords with chinese translation
+            contributions: List[str],  # key contributions and novelty, listed in items, each item is a string with chinese translation
+            approach: List[str],  # algorithm input --> step1 --> step2 --> step3 --> algorithm output, each step is a string with chinese translation, e.g. input: key frames 关键帧
+            relate_score: float  # relevance score (0-10)
             )
         """
     )
@@ -173,6 +175,7 @@ def main():
     print(f"Number of papers updated today: {len(latest_papers)}")
 
     selected_papers = []
+    not_related_papers = []
     for paper in latest_papers:
         title = paper.title
         abstract = paper.summary
@@ -182,15 +185,21 @@ def main():
             selected_papers.append((res, paper))
             print(f"\t{res.research_topic}: {res.keywords}")
             print(f"\t{res.approach}")
-            break
+            if os.environ.get("DEBUG") == "1":
+                if len(latest_papers) > 1 and len(not_related_papers) > 1:
+                    break
         else:
             print(f"\t[Not Related]")
+            not_related_papers.append((res, paper))
+    print("\n\n")
 
     # If there are papers that match the condition, assemble and send an email
+    date = selected_papers[0][1].updated.date()
+    email_subject = f"Daily Arxiv Papers {date}"
+    lines = []
+
     if selected_papers:
-        date = selected_papers[0][1].updated.date()
-        email_subject = f"Daily Arxiv Papers {date}"
-        lines = []
+        selected_papers.sort(key=lambda x: x[0].relate_score, reverse=True)
         for idx, (summary, paper) in enumerate(selected_papers):
             paper_id = paper.entry_id.split('/')[-1]
             title = paper.title
@@ -199,25 +208,52 @@ def main():
             keywords = summary.keywords
             contributions = summary.contributions
             approach = summary.approach
+            score = summary.relate_score
 
-            lines.append(f"[Paper {idx + 1}]: {paper_id} - {title}")
-            lines.append(f"Link: {link}")
-            lines.append(f"Research Topic: {topic}")
-            lines.append(f"Keywords: {', '.join(keywords)}")
+            lines.append(f"[Paper {idx + 1}, r{score}]: {topic} - {paper_id} - {title}")
+            lines.append(f"URL: {link}")
+            lines.append(f"关键字: {', '.join(keywords)}")
 
             lines.append("\n")
-            lines.append("Approach:")
+            lines.append("Pipeline:")
+            for i, step in enumerate(approach, 1):
+                lines.append(f"{i}. {step}")
+            
+            lines.append("\n")
+            lines.append("Contributions:")
             for i, contrib in enumerate(contributions, 1):
                 lines.append(f"{i}. {contrib}")
-            lines.append("\n")
-            lines.append(" --> ".join(approach))
-            lines.append("\n\n")
-            lines.append("-----------------")
+            lines.append("-----------------\n")
 
-        email_content = "\n".join(lines)
-        send_email(email_subject, email_content)
-    else:
-        print("No papers related to 3D Reconstruction / 3D Generation today. No email sent.")
+    print("\n\nNot related papers:\n\n")
+    if not_related_papers:
+        not_related_papers.sort(key=lambda x: x[0].relate_score, reverse=True)
+        for idx, (summary, paper) in enumerate(not_related_papers):
+            paper_id = paper.entry_id.split('/')[-1]
+            title = paper.title
+            link = paper.entry_id
+            topic = summary.research_topic
+            keywords = summary.keywords
+            approach = summary.approach
+            score = summary.relate_score
+
+            lines.append(f"[Others {idx + 1}, r{score}]: {topic} - {paper_id} - {title}")
+            lines.append(f"URL: {link}")
+            lines.append(f"关键字: {', '.join(keywords)}")
+            
+            lines.append("\n")
+            lines.append("Pipeline:")
+            for i, step in enumerate(approach, 1):
+                lines.append(f"{i}. {step}")
+            
+            lines.append("\n")
+            lines.append("Contributions:")
+            for i, contrib in enumerate(contributions, 1):
+                lines.append(f"{i}. {contrib}")
+            lines.append("-----------------\n")
+
+    email_content = "\n".join(lines)
+    send_email(email_subject, email_content)
 
 if __name__ == "__main__":
     main()
