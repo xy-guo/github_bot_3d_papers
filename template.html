@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文列表展示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 5px;
+            background-color: #f4f4f4;
+            font-size: small;
+        }
+        .container {
+            max-width: 1600px;
+            margin: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        h2 {
+            color: #555;
+        }
+        .paper {
+            border-bottom: 1px solid #ccc;
+            padding: 5px 0;
+        }
+        .paper:last-child {
+            border-bottom: none;
+        }
+        .title {
+            font-size: 1.2em;
+            color: #007bff;
+        }
+        .score {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .url {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .url:hover {
+            text-decoration: underline;
+        }
+        .keywords {
+            margin: 10px 0;
+            color: #666;
+            text-shadow: 1px 1px 1px #ccc;
+            font-size: 0.9em;
+        }
+        .pipeline {
+            margin: 10px 0;
+            color: #666;
+        }
+        .step {
+            margin: 5px 0;
+        }
+        .contribution {
+            margin: 5px 0;
+            color: #666;
+        }
+        .contribution-item {
+            margin: 2px 0;
+        }
+        @media (max-width: 600px) {
+            .title {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>论文列表</h1>
+
+        <h2>相关论文</h2>
+        {% for paper in related_papers %}
+        <div class="paper">
+            <div class="title"><a href="{{ paper.url }}" class="url">{{ paper.title }}</a></div>
+            <!-- <div class="score">相关度: {{ paper.score }}</div> -->
+            <div class="keywords">关键字: <u>{{ paper.keywords | join(', ') }}</u></div>
+            <div class="pipeline">
+                步骤:
+                {% for step in paper.pipeline %}
+                <div class="step"> {{ step }} </div>
+                {% endfor %}
+            </div>
+            <div class="contribution">
+                主要贡献:
+                {% for contribution in paper.contributions %}
+                <div class="contribution-item">{{ contribution }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <h2>不相关论文</h2>
+        {% for paper in not_related_papers %}
+        <div class="paper">
+            <div class="title"><a href="{{ paper.url }}" class="url">{{ paper.title }}</a></div>
+            <!-- <div class="score">相关度: {{ paper.score }}</div> -->
+            <div class="keywords">关键字: <u>{{ paper.keywords | join(', ') }}</u></div>
+            <div class="pipeline">
+                步骤:
+                {% for step in paper.pipeline %}
+                <div class="step"> {{ step }} </div>
+                {% endfor %}
+            </div>
+            <div class="contribution">
+                主要贡献:
+                {% for contribution in paper.contributions %}
+                <div class="contribution-item">{{ contribution }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
