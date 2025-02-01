@@ -19,7 +19,7 @@ Usage:
 """
 
 import os
-os.environ['https_proxy'] = "http://10.8.202.73:12332"
+os.environ['https_proxy'] = os.environ["PROXY"]
 
 import datetime
 import arxiv
@@ -38,14 +38,18 @@ from pydantic import BaseModel
 RESEARCH_AREAS = ['3D reconstruction', '3D generation']
 
 # OpenAI API key
-OPENAI_API_KEY = "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"  # Replace with your actual OpenAI API Key
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]  # Replace with your actual OpenAI API Key
 
 # 163 Mail SMTP configuration
 SMTP_SERVER = "smtp.163.com"                    # 163 Mail SMTP server
 SMTP_PORT = 465                                 # 163 SMTP SSL port
-SENDER_EMAIL = "guoxy95@163.com"         # Your 163 email address
-SENDER_PASSWORD = "your_163_email_authorization_code"  # 163 Mail authorization code (NOT your login password)
-RECEIVER_EMAIL = "receiver@example.com"         # Replace with the recipient's email
+SENDER_EMAIL = os.environ["SENDER_EMAIL"]         # Your 163 email address
+SENDER_PASSWORD = os.environ["SENDER_PASSWORD"]  # 163 Mail authorization code (NOT your login password)
+RECEIVER_EMAIL = os.environ["RECEIVER_EMAIL"]         # Replace with the recipient's email
+
+
+if not all([OPENAI_API_KEY, SENDER_EMAIL, SENDER_PASSWORD, RECEIVER_EMAIL]):
+    raise ValueError("Please configure the OpenAI API Key, 163 Mail SMTP settings, and email addresses.")
 
 # ========== Step 2: Helper Functions ==========
 
@@ -136,6 +140,7 @@ def send_email(subject: str, content: str):
     msg["Subject"] = subject
     msg["From"] = SENDER_EMAIL
     msg["To"] = RECEIVER_EMAIL
+    print(f"Sending email to {RECEIVER_EMAIL}\n{subject}\n{content}")
 
     # Attach text content to the MIMEMultipart
     part = MIMEText(content, "plain", "utf-8")
@@ -177,19 +182,37 @@ def main():
             selected_papers.append((res, paper))
             print(f"\t{res.research_topic}: {res.keywords}")
             print(f"\t{res.approach}")
+            break
         else:
             print(f"\t[Not Related]")
 
     # If there are papers that match the condition, assemble and send an email
     if selected_papers:
-        email_subject = "New Papers Related to {}"
+        date = selected_papers[0][1].updated.date()
+        email_subject = f"Daily Arxiv Papers {date}"
         lines = []
-        for idx, p in enumerate(selected_papers):
-            lines.append(f"{idx}. {p.title}\n")
-            lines.append(f"Authors: {', '.join(str(author) for author in p.authors)}\n")
-            lines.append(f"Link: {p.entry_id}\n")
-            lines.append(f"Abstract: {p.summary}\n")
-            lines.append("=" * 80 + "\n")
+        for idx, (summary, paper) in enumerate(selected_papers):
+            paper_id = paper.entry_id.split('/')[-1]
+            title = paper.title
+            link = paper.entry_id
+            topic = summary.research_topic
+            keywords = summary.keywords
+            contributions = summary.contributions
+            approach = summary.approach
+
+            lines.append(f"[Paper {idx + 1}]: {paper_id} - {title}")
+            lines.append(f"Link: {link}")
+            lines.append(f"Research Topic: {topic}")
+            lines.append(f"Keywords: {', '.join(keywords)}")
+
+            lines.append("\n")
+            lines.append("Approach:")
+            for i, contrib in enumerate(contributions, 1):
+                lines.append(f"{i}. {contrib}")
+            lines.append("\n")
+            lines.append(" --> ".join(approach))
+            lines.append("\n\n")
+            lines.append("-----------------")
 
         email_content = "\n".join(lines)
         send_email(email_subject, email_content)
