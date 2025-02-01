@@ -36,7 +36,7 @@ import jinja2
 # ========== Step 1: Configuration ==========
 
 # Config
-RESEARCH_AREAS = ['3D reconstruction', 'Mesh Reconstruction', '3D generation', "Multi-view Stereo", "Autonomous Driving", "Video Generation"]  # Your research areas
+RESEARCH_AREAS = ['3D reconstruction', 'Mesh Reconstruction', '3D generation', "Multi-view Stereo", "Autonomous Driving", "Video Generation", "3d gaussian", "gaussian splatting"]  # Your research areas
 
 # OpenAI API key
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]  # Replace with your actual OpenAI API Key
