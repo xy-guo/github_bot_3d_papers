@@ -84,16 +84,16 @@
         {% for paper in related_papers %}
         <div class="paper">
             <div class="title"><a href="{{ paper.url }}" class="url">{{ paper.title }}</a></div>
-            <!-- <div class="score">相关度: {{ paper.score }}</div> -->
+            <div class="score">相关度: {{ paper.score }} {{ paper.research_topic }}</div>
             <div class="keywords">关键字: <u>{{ paper.keywords | join(', ') }}</u></div>
             <div class="pipeline">
-                步骤:
+                <em>步骤:</em>
                 {% for step in paper.pipeline %}
                 <div class="step"> {{ step }} </div>
                 {% endfor %}
             </div>
             <div class="contribution">
-                主要贡献:
+                <em>主要贡献:</em>
                 {% for contribution in paper.contributions %}
                 <div class="contribution-item">{{ contribution }}</div>
                 {% endfor %}
@@ -105,7 +105,7 @@
         {% for paper in not_related_papers %}
         <div class="paper">
             <div class="title"><a href="{{ paper.url }}" class="url">{{ paper.title }}</a></div>
-            <!-- <div class="score">相关度: {{ paper.score }}</div> -->
+            <div class="score">相关度: {{ paper.score }} {{ paper.research_topic }}</div>
             <div class="keywords">关键字: <u>{{ paper.keywords | join(', ') }}</u></div>
             <div class="pipeline">
                 步骤:
