@@ -1,0 +1,44 @@
+name: Fetch Arxiv CV 3D Papers
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # runs daily at 09:00 UTC
+  workflow_dispatch:      # allow manual run from GitHub Actions tab
+
+jobs:
+  fetch-and-update:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install arxiv openai pydantic smtplib
+        pip install email
+
+    - name: Run the fetch script
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        SMTP_SERVER: smtp.163.com
+        SMTP_PORT: 465
+        SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+        SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+        RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+      run: |
+        python fetch_cv_3d_papers.py
+
+    - name: Commit README changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add README.md
+        git commit -m "Update README with new 3D-related papers"
+        git push
+      continue-on-error: true  # in case there's no change, don't fail the job
