@@ -209,8 +209,9 @@ def main():
             contributions = summary.contributions
             approach = summary.approach
             score = summary.relate_score
+            num_total = len(selected_papers)
 
-            lines.append(f"[Paper {idx + 1}, r{score}]: {topic} - {paper_id} - {title}")
+            lines.append(f"[Paper {idx + 1}/{num_total}, r{score}]: {topic} - {paper_id} - {title}")
             lines.append(f"URL: {link}")
             lines.append(f"关键字: {', '.join(keywords)}")
 
@@ -223,7 +224,7 @@ def main():
             lines.append("Contributions:")
             for i, contrib in enumerate(contributions, 1):
                 lines.append(f"{i}. {contrib}")
-            lines.append("-----------------\n")
+            lines.append("-----------------\n\n")
 
     print("\n\nNot related papers:\n\n")
     if not_related_papers:
@@ -236,8 +237,9 @@ def main():
             keywords = summary.keywords
             approach = summary.approach
             score = summary.relate_score
+            num_total = len(not_related_papers)
 
-            lines.append(f"[Others {idx + 1}, r{score}]: {topic} - {paper_id} - {title}")
+            lines.append(f"[Others {idx + 1}/{num_total}, r{score}]: {topic} - {paper_id} - {title}")
             lines.append(f"URL: {link}")
             lines.append(f"关键字: {', '.join(keywords)}")
             
@@ -250,7 +252,7 @@ def main():
             lines.append("Contributions:")
             for i, contrib in enumerate(contributions, 1):
                 lines.append(f"{i}. {contrib}")
-            lines.append("-----------------\n")
+            lines.append("-----------------\n\n")
 
     email_content = "\n".join(lines)
     send_email(email_subject, email_content)
