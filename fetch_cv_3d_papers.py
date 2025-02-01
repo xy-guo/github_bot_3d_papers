@@ -26,10 +26,11 @@ import arxiv
 import openai
 import smtplib
 import ssl
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pydantic import BaseModel
+import jinja2
 
 
 # ========== Step 1: Configuration ==========
@@ -93,8 +94,6 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
     '3D Reconstruction' or '3D Generation'. 
     Returns True if relevant, otherwise False.
     """
-    openai.api_key = OPENAI_API_KEY
-
     system_prompt = (
         "You are a computer vision PhD researcher to filter out computer vision papers related to your research. "
         f"Your research areas are {RESEARCH_AREAS}."
@@ -108,7 +107,7 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
         "Please answer in json format:"
         """dict(
             is_related: bool,  # is related to your research topic
-            research_topic: str,  # main research topic with chinese translation (e.g., 3D reconstruction 三维重建)
+            research_topic: str,  # main research topic with chinese translation (e.g., 3D reconstruction [三维重建])
             keywords: List[str],  # paper keywords with chinese translation
             contributions: List[str],  # key contributions and novelty, listed in items, each item is a string with chinese translation
             approach: List[str],  # algorithm input --> step1 --> step2 --> step3 --> algorithm output, each step is a string with chinese translation, e.g. input: key frames 关键帧
@@ -117,7 +116,7 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
         """
     )
 
-    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    client = openai.OpenAI(api_key=OPENAI_API_KEY, base_url="https://api.feidaapi.com/v1/" if len(OPENAI_API_KEY) <= 51 else None)
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini",  # If you have GPT-4 access, you can switch to gpt-4
         messages=[
@@ -145,7 +144,7 @@ def send_email(subject: str, content: str):
     print(f"Sending email to {RECEIVER_EMAIL}\n{subject}\n{content}")
 
     # Attach text content to the MIMEMultipart
-    part = MIMEText(content, "plain", "utf-8")
+    part = MIMEText(content, "html", "utf-8")
     msg.attach(part)
 
     # Use SSL to connect to the SMTP server
@@ -196,65 +195,43 @@ def main():
     # If there are papers that match the condition, assemble and send an email
     date = selected_papers[0][1].updated.date()
     email_subject = f"Daily Arxiv Papers {date}"
-    lines = []
 
-    if selected_papers:
-        selected_papers.sort(key=lambda x: x[0].relate_score, reverse=True)
-        for idx, (summary, paper) in enumerate(selected_papers):
-            paper_id = paper.entry_id.split('/')[-1]
-            title = paper.title
-            link = paper.entry_id
-            topic = summary.research_topic
-            keywords = summary.keywords
-            contributions = summary.contributions
-            approach = summary.approach
-            score = summary.relate_score
-            num_total = len(selected_papers)
+    selected_papers.sort(key=lambda x: x[0].relate_score, reverse=True)
+    not_related_papers.sort(key=lambda x: x[0].relate_score, reverse=True)
 
-            lines.append(f"[Paper {idx + 1}/{num_total}, r{score}]: {topic} - {paper_id} - {title}")
-            lines.append(f"URL: {link}")
-            lines.append(f"关键字: {', '.join(keywords)}")
+    # load template.html and render
+    templateLoader = jinja2.FileSystemLoader(searchpath="./")
+    templateEnv = jinja2.Environment(loader=templateLoader)
+    TEMPLATE_FILE = "template.html"
+    template = templateEnv.get_template(TEMPLATE_FILE)
 
-            lines.append("\n")
-            lines.append("Pipeline:")
-            for i, step in enumerate(approach, 1):
-                lines.append(f"{i}. {step}")
-            
-            lines.append("\n")
-            lines.append("Contributions:")
-            for i, contrib in enumerate(contributions, 1):
-                lines.append(f"{i}. {contrib}")
-            lines.append("-----------------\n\n")
+    def to_jinja2_format(papers: List[Tuple[PaperSummary, arxiv.Result]]) -> List[Dict]:
+        outputs = []
+        for summary, paper in papers:
+            arxiv_id = paper.entry_id.split("/")[-1]
+            contributions = [f"{i+1}. {c}" for i, c in enumerate(summary.contributions)]
+            output = {
+                "title": f"[{summary.relate_score}] {arxiv_id} {paper.title}",
+                "score": summary.relate_score,
+                "summary": paper.summary,
+                "research_topic": summary.research_topic,
+                "keywords": summary.keywords,
+                "contributions": contributions,
+                "pipeline": summary.approach,
+                "url": paper.entry_id,
+            }
+            outputs.append(output)
+        return outputs
+    
+    email_content = template.render(
+        date=date,
+        related_papers=to_jinja2_format(selected_papers),
+        not_related_papers=to_jinja2_format(not_related_papers),
+    )
 
-    print("\n\nNot related papers:\n\n")
-    if not_related_papers:
-        not_related_papers.sort(key=lambda x: x[0].relate_score, reverse=True)
-        for idx, (summary, paper) in enumerate(not_related_papers):
-            paper_id = paper.entry_id.split('/')[-1]
-            title = paper.title
-            link = paper.entry_id
-            topic = summary.research_topic
-            keywords = summary.keywords
-            approach = summary.approach
-            score = summary.relate_score
-            num_total = len(not_related_papers)
+    with open("email.html", "w") as f:
+        f.write(email_content)
 
-            lines.append(f"[Others {idx + 1}/{num_total}, r{score}]: {topic} - {paper_id} - {title}")
-            lines.append(f"URL: {link}")
-            lines.append(f"关键字: {', '.join(keywords)}")
-            
-            lines.append("\n")
-            lines.append("Pipeline:")
-            for i, step in enumerate(approach, 1):
-                lines.append(f"{i}. {step}")
-            
-            lines.append("\n")
-            lines.append("Contributions:")
-            for i, contrib in enumerate(contributions, 1):
-                lines.append(f"{i}. {contrib}")
-            lines.append("-----------------\n\n")
-
-    email_content = "\n".join(lines)
     send_email(email_subject, email_content)
 
 if __name__ == "__main__":
