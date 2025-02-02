@@ -20,7 +20,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade pip
-        pip install arxiv openai pydantic jinja2
+        pip install arxiv openai pydantic jinja2 markdown
 
     - name: Run the fetch script
       env:

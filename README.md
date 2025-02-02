@@ -1,4 +1,4 @@
-# Daily 3D-Related Paper Updates
+# Daily Updates on 3D-Related Papers
 
 This repository automatically fetches new or updated arXiv papers in the [cs.CV] category every day, checks if they are relevant to "3D reconstruction" or "3D generation" via ChatGPT, and lists them below.
 
@@ -10,5 +10,6 @@ This repository automatically fetches new or updated arXiv papers in the [cs.CV]
    - Update this README.md with the new findings.  
    - Send an email via 163 Mail if any relevant papers are found.  
 
+# Paper List
 ## Newly Found Papers on ...
 (Older entries get replaced automatically when the script runs again.)
