@@ -19,7 +19,7 @@ Usage:
 """
 
 import os
-os.environ['https_proxy'] = os.environ["PROXY"]
+os.environ['https_proxy'] = os.environ.get("PROXY", "")
 
 import datetime
 import arxiv
