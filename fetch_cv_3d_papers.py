@@ -31,12 +31,14 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pydantic import BaseModel
 import jinja2
+import markdown
+from markdown.extensions.tables import TableExtension
 
 
 # ========== Step 1: Configuration ==========
 
 # Config
-RESEARCH_AREAS = ['3D reconstruction', 'Mesh Reconstruction', '3D generation', "Multi-view Stereo", "Autonomous Driving", "Video Generation", "3d gaussian", "gaussian splatting"]  # Your research areas
+RESEARCH_AREAS = ['3D reconstruction', 'Mesh Reconstruction', '3D generation', "Multi-view Stereo", "Autonomous Driving", "Video Generation", "Image Generation", "3d gaussian", "gaussian splatting"]  # Your research areas
 
 # OpenAI API key
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]  # Replace with your actual OpenAI API Key
@@ -54,7 +56,7 @@ if not all([OPENAI_API_KEY, SENDER_EMAIL, SENDER_PASSWORD, RECEIVER_EMAIL]):
 
 # ========== Step 2: Helper Functions ==========
 
-def fetch_arxiv_papers(search_query="cat:cs.CV", max_results=100):
+def fetch_arxiv_papers(search_query="cat:cs.CV", max_results=200):
     """
     Fetch a list of papers from arXiv that match the search conditions.
     Default search category: Computer Vision (cs.CV).
@@ -107,8 +109,8 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
         "Please answer in json format:"
         """dict(
             is_related: bool,  # is related to your research topic
-            research_topic: str,  # main research topic with chinese translation (e.g., 3D reconstruction [三维重建])
-            keywords: List[str],  # paper keywords with chinese translation
+            research_topic: str,  # main research topic and its chinese translation (e.g., 3D reconstruction 三维重建)
+            keywords: List[str],  # english keywords, followed by their chinese translation, e.g., ["3D reconstruction", "3d gaussian", "三维重建", "3D高斯"]
             contributions: List[str],  # key contributions and novelty, listed in items, each item is a string with chinese translation
             approach: List[str],  # algorithm input --> step1 --> step2 --> step3 --> algorithm output, each step is a string with chinese translation, e.g. input: key frames 关键帧
             relate_score: float  # relevance score (0-10)
@@ -233,6 +235,40 @@ def main():
         f.write(email_content)
 
     send_email(email_subject, email_content)
+
+    # update README.md
+    update_readme(to_jinja2_format(selected_papers), date)
+
+def update_readme(papers, date):
+    date_str = date.strftime("%Y-%m-%d")
+    new_section = f"## Arxiv {date_str}\n\n"
+    new_section += "Relavance | Title | Research Topic | Keywords | Pipeline\n"
+    new_section += "|------|---------------|----------------|----------|---------|\n"
+
+    def to_md(items):
+        return "<br>".join(items)
+
+    for paper in papers:
+        new_section += f"{paper['score']} | [{paper['title']}]({paper['url']}) | {paper['research_topic']} | {to_md(paper['keywords'])} | {to_md(paper['pipeline'])} |\n"
+    new_section += "\n\n"
+
+    # Read the existing README.md
+    with open('README.md', 'r') as file:
+        content = file.readlines()
+
+    # Find the index of the last date section to replace it
+    for index, line in enumerate(content):
+        if line.startswith("# Paper List"):
+            last_date_index = index + 1
+            break
+
+    # Update the README content
+    content = content[:last_date_index] + [new_section] + content[last_date_index:]
+
+    # Write the updated content back to README.md
+    with open('README.md', 'w') as file:
+        file.writelines(content)
+
 
 if __name__ == "__main__":
     main()
