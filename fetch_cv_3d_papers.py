@@ -102,8 +102,9 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
     )
 
     prompt = (
+        f"Your research areas are {RESEARCH_AREAS}. "
         "You will receive a paper title and abstract. "
-        "Determine if it is related to your research area. "
+        "Determine if it is related to your research area and extract key information."
         f"Paper Title: {title}\n\n"
         f"Abstract: {abstract}\n\n"
         "Please answer in json format:"
