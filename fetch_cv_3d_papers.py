@@ -34,6 +34,7 @@ from pydantic import BaseModel
 import jinja2
 import markdown
 from markdown.extensions.tables import TableExtension
+from pypdf import PdfReader
 
 
 # ========== Step 1: Configuration ==========
@@ -143,6 +144,8 @@ SENDER_EMAIL = os.environ["SENDER_EMAIL"]         # Your 163 email address
 SENDER_PASSWORD = os.environ["SENDER_PASSWORD"]  # 163 Mail authorization code (NOT your login password)
 RECEIVER_EMAIL = os.environ["RECEIVER_EMAIL"]         # Replace with the recipient's email
 
+ASSET_PATH = "./assets"
+
 
 if not all([OPENAI_API_KEY, SENDER_EMAIL, SENDER_PASSWORD, RECEIVER_EMAIL]):
     raise ValueError("Please configure the OpenAI API Key, 163 Mail SMTP settings, and email addresses.")
@@ -224,7 +227,7 @@ class PaperSummary(BaseModel):
     score_reason: str
 
 
-def ask_gpt_if_3d_relevant(title: str, abstract: str, authors: List) -> bool:
+def ask_gpt_if_3d_relevant(title: str, abstract: str, authors: List, intro: str = None) -> bool:
     """
     Use ChatGPT API to check whether the paper is related to 
     '3D Reconstruction' or '3D Generation'. 
@@ -232,7 +235,12 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str, authors: List) -> bool:
     """
     system_prompt = (
         "You are a PhD researcher in computer vision tasked with filtering research papers relevant to your areas of study. "
-        f"Your research areas include: {RESEARCH_AREAS}."
+        f"Your research areas include:\n\n"
+    )
+    for area, topics in RESEARCH_AREAS.items():
+        system_prompt += f"\n- **{area}**: {', '.join(topics)}"
+    system_prompt += (
+        "\n\nYou are provided with a paper title and abstract. Determine if the paper is related to your research areas and respond accordingly."
     )
 
     prompt = (
@@ -270,8 +278,10 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str, authors: List) -> bool:
         f"**Paper Title**: {title}\n\n"
         f"**Abstract**: {abstract}\n\n"
         f"**Authors**: {authors}\n\n"
-        "Please generate the JSON response accordingly."
     )
+    if intro:
+        prompt += f"**Introduction**: {intro}\n\n"
+    prompt += "Please evaluate the relevance of this paper to your research areas."
 
     client = openai.OpenAI(api_key=OPENAI_API_KEY, base_url="https://api.feidaapi.com/v1/" if len(OPENAI_API_KEY) <= 51 else None)
     completion = client.beta.chat.completions.parse(
@@ -287,6 +297,7 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str, authors: List) -> bool:
 
     # Get the response from ChatGPT
     answer = completion.choices[0].message.parsed
+
     return answer
 
 def send_email(subject: str, content: str):
@@ -315,6 +326,14 @@ def send_email(subject: str, content: str):
     except Exception as e:
         print(f"Failed to send email: {e}")
 
+
+def extract_pdf_text(pdf_path: str, first_n: int = 2) -> str:
+    pdf = PdfReader(pdf_path)
+    text = ""
+    for page in pdf.pages[:first_n]:
+        text += page.extract_text()
+    return text
+
 # ========== Step 3: Main Logic ==========
 
 def main():
@@ -324,7 +343,7 @@ def main():
     # Print basic info for debugging/logging
     for i, paper in enumerate(papers):
         time = paper.updated
-        print(f"[{i}] {paper.entry_id.split('/')[-1]} {paper.title}: {paper.summary[:50]}... (Updated: {time})")
+        # print(f"[{i}] {paper.entry_id.split('/')[-1]} {paper.title}: {paper.summary[:50]}... (Updated: {time})")
 
     # Filter papers that are updated today
     last_day = papers[0].updated
@@ -337,11 +356,31 @@ def main():
         title = paper.title
         abstract = paper.summary
         authors = paper.authors
-        print(f"Analyzing paper: {title}")
+        paper_id = paper.entry_id.split('/')[-1]
+        
+        print(f"\nAnalyzing paper: {title}")
         res: PaperSummary = ask_gpt_if_3d_relevant(title, abstract, authors)
         if res.is_related:
-            selected_papers.append((res, paper))
-            print("\t", res)
+            print("\t [v1 Result:]", res)
+            # download pdf
+            try:
+                if res.relate_score > 4:
+                    pdf_url = paper.entry_id.replace("abs", "pdf")
+                    os.makedirs(ASSET_PATH, exist_ok=True)
+                    local_path = f"{ASSET_PATH}/{paper_id}.pdf"
+                    os.system(f"curl -o {local_path} {pdf_url}")
+                    # extract pdf text
+                    pdf_text = extract_pdf_text(local_path)
+                    # ask gpt again
+                    res2: PaperSummary = ask_gpt_if_3d_relevant(title, abstract, authors, intro=pdf_text)
+                    print("\t [v2 Result:]", res2)
+                    res2.keywords.insert(0, "v2")
+                    res = res2
+            except Exception as e:
+                print(f"Failed to download PDF: {e}")
+
+        if res.is_related:
+            selected_papers.append((res, paper))        
             if os.environ.get("DEBUG") == "1":
                 if len(selected_papers) > 2 and len(not_related_papers) > 2:
                     break
