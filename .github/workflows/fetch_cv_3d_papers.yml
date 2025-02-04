@@ -2,7 +2,7 @@ name: Fetch Arxiv CV 3D Papers
 
 on:
   schedule:
-    - cron: '0 9 * * *'  # runs daily at 09:00 UTC
+    - cron: '0 2 * * *'  # runs daily at 21:00 UTC-5, 02:00 UTC, 10:00 UTC+8
   workflow_dispatch:      # allow manual run from GitHub Actions tab
 
 jobs:

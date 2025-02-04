@@ -23,6 +23,7 @@ os.environ['https_proxy'] = os.environ.get("PROXY", "")
 
 import datetime
 import arxiv
+import feedparser
 import openai
 import smtplib
 import ssl
@@ -38,7 +39,99 @@ from markdown.extensions.tables import TableExtension
 # ========== Step 1: Configuration ==========
 
 # Config
-RESEARCH_AREAS = ['3D reconstruction', 'Mesh Reconstruction', '3D generation', "Multi-view Stereo", "Autonomous Driving", "Video Generation", "Image Generation", "3d gaussian", "gaussian splatting"]  # Your research areas
+RESEARCH_AREAS = {
+    "3D Reconstruction and Modeling": [
+        "3D Reconstruction 三维重建",
+        "Mesh Reconstruction 网格重建",
+        "3D Generation 三维生成",
+        "Surface Reconstruction 表面重建",
+        "Shape Optimization 形状优化",
+        "Volumetric Reconstruction 体积重建",
+        "Texture Mapping 纹理映射",
+        "Point Cloud Processing 点云处理",
+        "Depth Estimation 深度估计",
+        "Structure from Motion (SfM) 运动结构估计",
+        "Photogrammetry 摄影测量",
+        "Shape Completion 形状补全",
+        "Model Simplification 模型简化",
+        "Sparse and Dense Reconstruction 稀疏与密集重建",
+        "3D Morphable Models 三维可变形模型"
+    ],
+    "Image and Video Generation": [
+        "Image Generation 图像生成",
+        "Video Generation 视频生成",
+        "Diffusion Models 扩散模型",
+        "ControlNet 控制网络",
+        "Generative Adversarial Networks (GANs) 生成对抗网络",
+        "Neural Style Transfer 神经风格迁移",
+        "Image Synthesis 图像合成",
+        "Super-Resolution 超分辨率",
+        "Image Inpainting 图像修复",
+        "Video Prediction 视频预测",
+        "Frame Interpolation 帧插补",
+        "Conditional Generation 条件生成",
+        "Unconditional Generation 无条件生成",
+    ],
+    "Autonomous Systems and Robotics": [
+        "Autonomous Driving 自动驾驶",
+        "Robotic Perception 机器人感知",
+        "Visual Odometry 视觉里程计",
+        "Simultaneous Localization and Mapping (SLAM) 同时定位与地图构建",
+        "Path Planning 路径规划",
+        "Sensor Fusion 传感器融合",
+        "Autonomous Navigation 自主导航",
+        "Obstacle Detection 障碍物检测",
+        "Behavior Prediction 行为预测",
+        "Localization 定位",
+        "Mapping 地图构建",
+        "Reinforcement Learning in Robotics 强化学习在机器人中的应用"
+    ],
+    "Multi-view and Stereo Vision": [
+        "Multi-view Stereo 多视角立体",
+        "Stereo Matching 立体匹配",
+        "Stereo Vision 立体视觉",
+        "Multi-view Geometry 多视图几何",
+        "Epipolar Geometry 极线几何",
+        "Disparity Estimation 视差估计",
+        "Multi-camera Systems 多摄像头系统",
+        "Depth Map Fusion 深度图融合",
+        "Multi-view Consistency 多视角一致性",
+        "Novel View Synthesis 视图合成",
+    ],
+    "Neural Rendering": [
+        "3D Gaussian 三维高斯",
+        "Gaussian Splatting 高斯点云",
+        "Neural Rendering 神经渲染",
+        "Point Cloud Processing 点云处理",
+        "Neural Radiance Fields (NeRF) 神经辐射场",
+        "Mesh-Based Rendering 基于网格的渲染",
+        "Volume Rendering 体积渲染",
+        "Differentiable Rendering 可微渲染",
+        "Appearance Modeling 外观建模",
+        "Lighting Estimation 光照估计",
+        "Material Property Estimation 材料属性估计",
+        "Real-time Rendering 实时渲染",
+        "Photorealistic Rendering 照相真实渲染",
+        "Generative Neural Rendering 生成式神经渲染",
+        "Hybrid Rendering 混合渲染"
+    ],
+    "VLM & VLA": [
+        "Vision-Language Models (VLMs) 视觉语言模型",
+        "Vision-Language Alignment (VLA) 视觉语言对齐",
+        "Large Language Models (LLMs) 大型语言模型",
+        "Multimodal Learning 多模态学习",
+        "Cross-modal Retrieval 跨模态检索",
+        "Visual Question Answering (VQA) 视觉问答",
+        "Image Captioning 图像描述生成",
+        "Text-to-Image Generation 文本到图像生成",
+        "Image-Text Matching 图像文本匹配",
+        "Multimodal Embedding 多模态嵌入",
+        "Visual Commonsense Reasoning 视觉常识推理",
+        "Contextual Reasoning 上下文推理",
+        "Zero-shot Learning 零样本学习",
+        "Few-shot Learning 少样本学习"
+    ]
+}
 
 # OpenAI API key
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]  # Replace with your actual OpenAI API Key
@@ -67,12 +160,52 @@ def fetch_arxiv_papers(search_query="cat:cs.CV", max_results=200):
         query=search_query,
         max_results=max_results,
         sort_by=arxiv.SortCriterion.SubmittedDate,
-        sort_order=arxiv.SortOrder.Descending
+        sort_order=arxiv.SortOrder.Descending,
     )
     results = []
     for result in client.results(search):
         results.append(result)
     return results
+
+def fetch_arxiv_papers_rss(search_query="cat:cs.CV", max_results=200):
+    # ArXiv cs.CV RSS feed URL
+    rss_url = "https://arxiv.org/rss/cs.CV"
+
+    # 解析 RSS feed
+    feed = feedparser.parse(rss_url)
+
+    # 遍历并打印论文信息
+    papers = []
+    for i, entry in enumerate(feed.entries):
+        title = entry.title
+        link = entry.link
+        summary = entry.summary
+        tags = [tag.term for tag in entry.tags]
+        date = entry.published
+        date = datetime.datetime.strptime(date, "%a, %d %b %Y %H:%M:%S %z")
+        authors = entry.authors
+        if not "Announce Type: new" in summary:
+            continue
+
+        print(f"Paper {i+1}/{len(feed.entries)}")
+        print(f"Title: {title}")
+        print(f"Link: {link}")
+        print(f"Date: {date}")
+        print(f"Authors: {authors}")
+        print(f"Tags: {tags}")
+        print(f"Abstract: {summary}")
+        print("\n")
+
+        papers.append(
+            arxiv.Result(
+                title=title,
+                summary=summary,
+                updated=date,
+                entry_id=link,
+                authors=authors,
+            )
+        )
+    return papers
 
 def is_same_day(date1: datetime.datetime, date2: datetime.datetime) -> bool:
     """
@@ -88,35 +221,56 @@ class PaperSummary(BaseModel):
     contributions: List[str]
     approach: List[str]
     relate_score: float
+    score_reason: str
 
 
-def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
+def ask_gpt_if_3d_relevant(title: str, abstract: str, authors: List) -> bool:
     """
     Use ChatGPT API to check whether the paper is related to 
     '3D Reconstruction' or '3D Generation'. 
     Returns True if relevant, otherwise False.
     """
     system_prompt = (
-        "You are a computer vision PhD researcher to filter out computer vision papers related to your research. "
-        f"Your research areas are {RESEARCH_AREAS}."
+        "You are a PhD researcher in computer vision tasked with filtering research papers relevant to your areas of study. "
+        f"Your research areas include: {RESEARCH_AREAS}."
     )
 
     prompt = (
-        f"Your research areas are {RESEARCH_AREAS}. "
-        "You will receive a paper title and abstract. "
-        "Determine if it is related to your research area and extract key information."
-        f"Paper Title: {title}\n\n"
-        f"Abstract: {abstract}\n\n"
-        "Please answer in json format:"
-        """dict(
-            is_related: bool,  # is related to your research topic
-            research_topic: str,  # main research topic and its chinese translation (e.g., 3D reconstruction 三维重建)
-            keywords: List[str],  # english keywords, followed by their chinese translation, e.g., ["3D reconstruction", "3d gaussian", "三维重建", "3D高斯"]
-            contributions: List[str],  # key contributions and novelty, listed in items, each item is a string with chinese translation
-            approach: List[str],  # algorithm input --> step1 --> step2 --> step3 --> algorithm output, each step is a string with chinese translation, e.g. input: key frames 关键帧
-            relate_score: float  # relevance score (0-10)
-            )
-        """
+        "You will be provided with a paper title and abstract. "
+        "Determine if the paper is related to your research areas and respond using the strict JSON format below:\n\n"
+        "```json\n"
+        "{\n"
+        '  "is_related": true,\n'
+        '  "research_topic": "3D reconstruction 三维重建",\n'
+        '  "keywords": ["3D reconstruction", "autonomous driving"],\n'
+        '  "contributions": [\n'
+        '    "Developed novel algorithms 提出了新算法",\n'
+        '    "Integrated multi-view images 与多视角图像集成"\n'
+        '  ],\n'
+        '  "approach": [\n'
+        '    "Input: Multi-view images 多视角图像",\n'
+        '    "Step1: Data integration 数据集成",\n'
+        '    "Step2: Algorithm development 算法开发",\n'
+        '    "Step3: Model evaluation 模型评估",\n'
+        '    "Output: Enhanced 3D models 改进的三维模型"\n'
+        '  ],\n'
+        '  "relate_score": 9.0,\n'
+        '  "score_reason": "The paper presents a novel approach to 3D reconstruction and has high relevance to my research areas."\n'
+        "}\n"
+        "```\n\n"
+        "### Instructions:\n"
+        "- `research_topic` should include the primary English term followed by its Chinese translation, separated by a space.\n"
+        "- **Focus on broad and general topics** within each research area to capture foundational and widely applicable research, rather than highly specialized subfields.\n"
+        "- **Assess the quality** of the research based on its contribution, innovation, methodology, and potential impact. Assign a higher `relate_score` (closer to 10) to high-quality, impactful papers and a lower score to those of lesser quality or relevance.\n"
+        "- Ensure `relate_score` is a float between 0 and 10, representing the relevance score to your research areas. High-quality research should receive a higher score.\n"
+        "- In the `contributions` section, highlight the main contributions and innovations of the paper that demonstrate its research value.\n"
+        "- In the `approach` section, provide a succinct overview of the methodology steps, emphasizing their general applicability and significance.\n"
+        "- **Do not include any additional text or comments** outside the specified JSON format.\n"
+        "- Maintain **consistency** in the bilingual format, ensuring each English term is accurately paired with its Chinese translation.\n\n"
+        f"**Paper Title**: {title}\n\n"
+        f"**Abstract**: {abstract}\n\n"
+        f"**Authors**: {authors}\n\n"
+        "Please generate the JSON response accordingly."
     )
 
     client = openai.OpenAI(api_key=OPENAI_API_KEY, base_url="https://api.feidaapi.com/v1/" if len(OPENAI_API_KEY) <= 51 else None)
@@ -126,6 +280,7 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str) -> bool:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
+        temperature=0,
         max_tokens=2000,
         response_format=PaperSummary,
     )
@@ -164,7 +319,7 @@ def send_email(subject: str, content: str):
 
 def main():
     print("Fetching today's new papers (cs.CV) from arXiv...")
-    papers = fetch_arxiv_papers()
+    papers = fetch_arxiv_papers_rss()
     
     # Print basic info for debugging/logging
     for i, paper in enumerate(papers):
@@ -181,14 +336,14 @@ def main():
     for paper in latest_papers:
         title = paper.title
         abstract = paper.summary
+        authors = paper.authors
         print(f"Analyzing paper: {title}")
-        res: PaperSummary = ask_gpt_if_3d_relevant(title, abstract)
+        res: PaperSummary = ask_gpt_if_3d_relevant(title, abstract, authors)
         if res.is_related:
             selected_papers.append((res, paper))
-            print(f"\t{res.research_topic}: {res.keywords}")
-            print(f"\t{res.approach}")
+            print("\t", res)
             if os.environ.get("DEBUG") == "1":
-                if len(latest_papers) > 1 and len(not_related_papers) > 1:
+                if len(selected_papers) > 2 and len(not_related_papers) > 2:
                     break
         else:
             print(f"\t[Not Related]")
@@ -222,6 +377,7 @@ def main():
                 "contributions": contributions,
                 "pipeline": summary.approach,
                 "url": paper.entry_id,
+                "authors": paper.authors,
             }
             outputs.append(output)
         return outputs
@@ -250,7 +406,7 @@ def update_readme(papers, date):
         return "<br>".join(items)
 
     for paper in papers:
-        new_section += f"{paper['score']} | [{paper['title']}]({paper['url']}) | {paper['research_topic']} | {to_md(paper['keywords'])} | {to_md(paper['pipeline'])} |\n"
+        new_section += f"{paper['score']} | [{paper['title']}]({paper['url']}) <br> {paper['authors']} | {paper['research_topic']} | {to_md(paper['keywords'])} | {to_md(paper['pipeline'])} |\n"
     new_section += "\n\n"
 
     # Read the existing README.md
