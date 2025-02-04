@@ -55,6 +55,11 @@
             text-shadow: 1px 1px 1px #ccc;
             font-size: 0.9em;
         }
+        .authors {
+            margin: 5px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
         .pipeline {
             margin: 5px 0;
             color: #666;
@@ -86,6 +91,7 @@
             <div class="title"><a href="{{ paper.url }}" class="url">{{ paper.title }}</a></div>
             <div class="score">相关度: {{ paper.score }} {{ paper.research_topic }}</div>
             <div class="keywords">关键字: <u>{{ paper.keywords | join(', ') }}</u></div>
+            <div class="authors">作者: {{ paper.authors }} </div>
             <div class="pipeline">
                 <em><b>步骤:</b></em>
                 {% for step in paper.pipeline %}
@@ -107,6 +113,7 @@
             <div class="title"><a href="{{ paper.url }}" class="url">{{ paper.title }}</a></div>
             <div class="score">相关度: {{ paper.score }} {{ paper.research_topic }}</div>
             <div class="keywords">关键字: <u>{{ paper.keywords | join(', ') }}</u></div>
+            <div class="authors">作者: {{ paper.authors }} </div>
             <div class="pipeline">
                 <em><b>步骤:</b></em>
                 {% for step in paper.pipeline %}
