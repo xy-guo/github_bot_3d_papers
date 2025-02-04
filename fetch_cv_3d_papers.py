@@ -244,7 +244,7 @@ def ask_gpt_if_3d_relevant(title: str, abstract: str, authors: List, intro: str 
     )
 
     prompt = (
-        "You will be provided with a paper title and abstract. "
+        "You will be provided with a paper title, abstract, and optionally introduction. "
         "Determine if the paper is related to your research areas and respond using the strict JSON format below:\n\n"
         "```json\n"
         "{\n"
