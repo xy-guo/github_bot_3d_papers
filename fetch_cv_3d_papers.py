@@ -175,7 +175,10 @@ def fetch_arxiv_papers_rss(search_query="cat:cs.CV", max_results=200):
     rss_url = "https://arxiv.org/rss/cs.CV"
 
     # 解析 RSS feed
-    feed = feedparser.parse(rss_url)
+    user_agent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                "Chrome/117.0.0.0 Safari/537.36")
+    feed = feedparser.parse(rss_url, agent=user_agent)
 
     # 遍历并打印论文信息
     papers = []
