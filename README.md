@@ -11,6 +11,17 @@ This repository automatically fetches new or updated arXiv papers in the [cs.CV]
    - Send an email via 163 Mail if any relevant papers are found.  
 
 # Paper List
+## Arxiv 2025-02-20
+
+Relavance | Title | Research Topic | Keywords | Pipeline
+|------|---------------|----------------|----------|---------|
+9.5 | [[9.5] 2502.13335 Geometry-Aware Diffusion Models for Multiview Scene Inpainting](https://arxiv.org/abs/2502.13335) <br> [{'name': 'Ahmad Salimi, Tristan Aumentado-Armstrong, Marcus A. Brubaker, Konstantinos G. Derpanis'}] | 3D Scene Inpainting 3D场景修复 | v2<br>3D inpainting<br>multi-view consistency<br>geometry-aware models | Input: Multi-view images 多视角图像<br>Step1: Image masking 图像遮蔽<br>Step2: Geometry-aware fusion 几何感知融合<br>Step3: Generative inpainting 生成式修复<br>Output: Multi-view consistent images 多视角一致图像 |
+9.5 | [[9.5] 2502.13803 3D Gaussian Splatting aided Localization for Large and Complex Indoor-Environments](https://arxiv.org/abs/2502.13803) <br> [{'name': 'Vincent Ress, Jonas Meyer, Wei Zhang, David Skuddis, Uwe Soergel, Norbert Haala'}] | 3D Reconstruction and Modeling 三维重建 | v2<br>3D Gaussian Splatting<br>visual localization<br>SLAM<br>indoor environments | Input: Multi-view images 多视角图像<br>Step1: Use visual SLAM to generate a 3D Gaussian Splatting (3DGS) based map 使用视觉SLAM生成基于3D高斯的地图<br>Step2: Render images from the 3DGS map to create reference data 从3DGS地图中渲染图像以创建参考数据<br>Step3: Evaluate the performance impact of additional rendered views 评估附加渲染视图对性能的影响<br>Output: Improved localization accuracy 改进的定位精度 |
+9.5 | [[9.5] 2502.13968 Betsu-Betsu: Multi-View Separable 3D Reconstruction of Two Interacting Objects](https://arxiv.org/abs/2502.13968) <br> [{'name': 'Suhas Gopal, Rishabh Dabral, Vladislav Golyanik, Christian Theobalt'}] | 3D Reconstruction and Modeling 三维重建 | v2<br>3D reconstruction<br>neuro-implicit methods<br>multi-view<br>human-object interactions | Input: Multi-view RGB images 多视角RGB图像<br>Step1: Data integration 数据集成<br>Step2: Algorithm development 算法开发<br>Step3: Alpha-blending regularization implementation α混合正则化实施<br>Step4: Joint optimization of Signed Distance Fields (SDFs) 联合优化有符号距离场(SDF)<br>Output: Separable 3D geometries 可分离的3D几何 |
+8.5 | [[8.5] 2502.13524 MobileViM: A Light-weight and Dimension-independent Vision Mamba for 3D Medical Image Analysis](https://arxiv.org/abs/2502.13524) <br> [{'name': 'Wei Dai, Steven Wang, Jun Liu'}] | 3D Reconstruction and Modeling 三维重建 | v2<br>3D medical imaging<br>segmentation<br>deep learning | Input: 3D medical images 三维医学图像<br>Step1: Data transformation 数据转换<br>Step2: Model enhancement 模型增强<br>Step3: Evaluation on datasets 数据集评估<br>Output: Efficient segmentation results 高效分割结果 |
+8.5 | [[8.5] 2502.13883 Multi-view Video-Pose Pretraining for Operating Room Surgical Activity Recognition](https://arxiv.org/abs/2502.13883) <br> [{'name': 'Idris Hamoud, Vinkle Srivastav, Muhammad Abdullah Jamal, Didier Mutter, Omid Mohareri, Nicolas Padoy'}] | Multi-view and Stereo Vision 多视角与立体视觉 | v2<br>Surgical Activity Recognition<br>Multi-view<br>Pose Estimation<br>Computer Vision | Input: Multi-view camera recordings 多视角摄像头录制<br>Step1: Align 2D pose and vision embeddings 2D姿势和视觉嵌入对齐<br>Step2: Dual-encoder architecture implementation 双编码器架构实现<br>Step3: Pretraining with geometric constraints 几何约束预训练<br>Output: Enhanced surgical activity recognition model 改进的手术活动识别模型 |
+
+
 ## Arxiv 2025-02-19
 
 Relavance | Title | Research Topic | Keywords | Pipeline
